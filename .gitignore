@@ -1,0 +1,12 @@
+# Downloaded upstream source trees (CPython, libexpat, liblzma, libzstd, bzip2)
+external/
+
+# Per-module build artifacts: copied sources, .o, .mjs, .wasm
+build/
+
+# The bridge, cloned by build.sh (unless WASTHON_DIR points at a checkout),
+# and what build.sh copies from it next to the pages
+.wasthon/
+loader/brython/
+loader/brython-src.js
+loader/wasthon-*.js

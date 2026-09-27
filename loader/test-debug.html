@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>wasthon — debug fishing page (hundreds of probing tests)</title>
+<title>Wastdlib — debug fishing page (hundreds of probing tests)</title>
 <script src="./brython-src.js"></script>
 <script src="./wasthon-loader.js"></script>
 </head>
 <body>
 <p style="font-size:0.85em;margin:0 0 1em 0;"><a href="index.html">← back to index</a></p>
-<h1>wasthon — debug fishing page</h1>
+<h1>Wastdlib — debug fishing page</h1>
 <p style="color:#666;font-size:0.9em;">
   Loads the full bundle and runs hundreds of probing tests across the 22
   modules — focus on API surfaces, edge cases, and error paths that the
@@ -27,8 +27,8 @@ const log = (...args) => {
 window.__wasthon_log = log;
 
 try {
-    log('Loading wasthon-full.mjs…');
-    const bundle = await wasthonLoadBundle('../build/wasthon-full.mjs');
+    log('Loading wastdlib-full.mjs…');
+    const bundle = await wasthonLoadBundle('../build/wastdlib-full.mjs');
     log('Bundle loaded. Installing 22 modules…');
     for (const m of ['_md5','_sha1','_sha2','_sha3','_blake2','_hmac',
                      'zlib','_bz2','_lzma','_zstd',

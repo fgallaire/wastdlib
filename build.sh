@@ -4,23 +4,25 @@
 #
 # BSD 3-Clause License
 #
-# Build a wasthon module to .mjs/.wasm
+# Build a Wastdlib module to .mjs/.wasm, against the wasthon bridge
 #
 # Usage: ./build.sh <command>
-#   <module>...   build one or several modules (e.g. _sha2, or _sha2 _decimal)
-#   all           build every supported module (~45 s once libs are cached)
-#   wasthon       build the light bundle (23 modules, ~1 MB) — the default
-#                 drop-in: covers crypto, compression (zlib/bz2/lzma),
-#                 decimal, json/csv/struct/sre/pyexpat, math, array
-#   wasthon-full  build the full bundle (26 modules, ~3 MB), adding the
-#                 three heavy specialists: unicodedata (full Unicode DB),
-#                 _zstd (modern compression) and _sqlite3 (embedded DB)
-#   list          show the known module names
+#   <module>...    build one or several modules (e.g. _sha2, or _sha2 _decimal)
+#   all            build every supported module (~45 s once libs are cached)
+#   wastdlib       build the light bundle (23 modules, ~1 MB) — the default
+#                  drop-in: covers crypto, compression (zlib/bz2/lzma),
+#                  decimal, json/csv/struct/sre/pyexpat, math, array
+#   wastdlib-full  build the full bundle (26 modules, ~3 MB), adding the
+#                  three heavy specialists: unicodedata (full Unicode DB),
+#                  _zstd (modern compression) and _sqlite3 (embedded DB)
+#   list           show the known module names
 #
+# The bridge comes from the wasthon repository: WASTHON_DIR=/path/to/wasthon
+# to use a local checkout, else a shallow clone of wasthon@main in .wasthon/.
 # emcc is installed automatically into ./external/emsdk/ on first run.
 # Requires: curl or wget (to download sources) and make (used by emmake for xz/zstd).
-# External source trees default to ./external/<libname> — override via env
-# vars to point at an existing checkout:
+# External source trees default to ./external/<libname> (EXTERNAL=/path moves
+# them all) — override one at a time via env vars to point at an existing checkout:
 #   CPYTHON_SRC=/path/to/Python-3.14.6
 #   EXPAT_DIR=/path/to/expat-2.8.2
 #   ZSTD_DIR=/path/to/zstd-1.5.6
@@ -36,11 +38,11 @@ export NO_COLOR=1
 usage() {
     cat >&2 <<EOF
 Usage: $0 <command>
-  <module>...   build one or several modules (e.g. _sha2, or _sha2 _decimal)
-  all           build every supported module
-  wasthon       light bundle (23 modules, ~1 MB) — the default deliverable
-  wasthon-full  full bundle (26 modules, ~3 MB) — adds unicodedata + _zstd + _sqlite3
-  list          show the known module names
+  <module>...    build one or several modules (e.g. _sha2, or _sha2 _decimal)
+  all            build every supported module
+  wastdlib       light bundle (23 modules, ~1 MB) — the default deliverable
+  wastdlib-full  full bundle (26 modules, ~3 MB) — adds unicodedata + _zstd + _sqlite3
+  list           show the known module names
 EOF
 }
 
@@ -60,7 +62,7 @@ KNOWN_MODULES=(
 
 if [[ "${MODULE}" == "list" ]]; then
     cat <<'EOF'
-Known wasthon modules (26):
+Known Wastdlib modules (26):
   hashlib:     _md5  _sha1  _sha2  _sha3  _blake2  _hmac
   compression: _zlib  _bz2  _lzma  _zstd
   text/parse:  _csv  _json  _struct  _sre  unicodedata  pyexpat
@@ -74,11 +76,11 @@ EOF
 fi
 
 # Validate up front so a typo doesn't trigger the heavy emsdk install.
-# Whole-build commands (all / wasthon / wasthon-full) — valid only as the
+# Whole-build commands (all / wastdlib / wastdlib-full) — valid only as the
 # sole argument. Otherwise every argument must be a known module.
 if [[ $# -eq 1 && ( "${MODULE}" == "all" ||
-                    "${MODULE}" == "wasthon" ||
-                    "${MODULE}" == "wasthon-full" ) ]]; then
+                    "${MODULE}" == "wastdlib" ||
+                    "${MODULE}" == "wastdlib-full" ) ]]; then
     :
 else
     for arg in "$@"; do
@@ -96,8 +98,25 @@ fi
 
 REPO="$(cd "$(dirname "$0")" && pwd)"
 BUILD="${REPO}/build"
-SRC="${REPO}/src"
-EXTERNAL="${REPO}/external"
+EXTERNAL="${EXTERNAL:-${REPO}/external}"
+
+# The bridge — src/ (wasthon.c/.h/.js and the C-API headers), the vendored
+# Brython and the pages' JS helpers — lives in the wasthon repository, as for
+# numbry and brytorch: $WASTHON_DIR when set (a local checkout), else a shallow
+# clone of $WASTHON_REPO@$WASTHON_REF into .wasthon/.
+WASTHON_REPO="${WASTHON_REPO:-https://github.com/fgallaire/wasthon.git}"
+WASTHON_REF="${WASTHON_REF:-main}"
+if [[ -z "${WASTHON_DIR:-}" ]]; then
+    WASTHON_DIR="${REPO}/.wasthon"
+    if [[ ! -d "${WASTHON_DIR}/.git" ]]; then
+        echo "=== clone wasthon @ ${WASTHON_REF} (the bridge) ===" >&2
+        git clone -q --depth 1 -b "${WASTHON_REF}" "${WASTHON_REPO}" "${WASTHON_DIR}"
+    fi
+fi
+SRC="${WASTHON_DIR}/src"
+# The pages load Brython and the bridge's helpers from loader/, next to them.
+cp -r "${WASTHON_DIR}/loader/brython" "${REPO}/loader/"
+cp "${WASTHON_DIR}"/loader/wasthon-*.js "${WASTHON_DIR}/loader/brython-src.js" "${REPO}/loader/"
 
 CPYTHON_SRC="${CPYTHON_SRC:-${EXTERNAL}/Python-3.14.6}"
 EXPAT_DIR="${EXPAT_DIR:-${EXTERNAL}/expat-2.8.2}"
@@ -295,7 +314,7 @@ compile_module_src() {
 # Link a module: emcc -O2 <objects> --js-library wasthon.js + standard flags.
 # Args: <output_name_without_ext> <PyInit_symbol> <export_js_name> <objects...>
 #
-# When SKIP_LINK=1 (set by the bundled targets `wasthon` / `wasthon-full`),
+# When SKIP_LINK=1 (set by the bundled targets `wastdlib` / `wastdlib-full`),
 # this is a no-op — the per-module case has already produced the .o files we
 # need, and the bundled target links them all together itself.
 link_module() {
@@ -430,24 +449,24 @@ fi
 # links the lot in one emcc call exporting every PyInit_* symbol.
 #
 # Two targets:
-#   wasthon      — light (23 modules, ~1 MB). The default deliverable.
-#                  Drops the three heavy specialists (unicodedata, _zstd,
-#                  _sqlite3) that together account for most of the full
-#                  bundle's extra weight. Users who need them load the
-#                  per-module .wasm add-on alongside.
-#   wasthon-full — everything (26 modules, ~3 MB). Kitchen-sink, opt-in.
+#   wastdlib      — light (23 modules, ~1 MB). The default deliverable.
+#                   Drops the three heavy specialists (unicodedata, _zstd,
+#                   _sqlite3) that together account for most of the full
+#                   bundle's extra weight. Users who need them load the
+#                   per-module .wasm add-on alongside.
+#   wastdlib-full — everything (26 modules, ~3 MB). Kitchen-sink, opt-in.
 #
 # Per-module .mjs files coexist for dev/bench and on-demand use.
-if [[ "${MODULE}" == "wasthon" || "${MODULE}" == "wasthon-full" ]]; then
-    if [[ "${MODULE}" == "wasthon" ]]; then
-        BUNDLE_NAME="wasthon"
-        BUNDLE_EXPORT_NAME="wasthon_init"
+if [[ "${MODULE}" == "wastdlib" || "${MODULE}" == "wastdlib-full" ]]; then
+    if [[ "${MODULE}" == "wastdlib" ]]; then
+        BUNDLE_NAME="wastdlib"
+        BUNDLE_EXPORT_NAME="wastdlib_init"
         INCLUDE_ZSTD=0
         INCLUDE_UNICODEDATA=0
         INCLUDE_SQLITE=0
     else
-        BUNDLE_NAME="wasthon-full"
-        BUNDLE_EXPORT_NAME="wasthon_full_init"
+        BUNDLE_NAME="wastdlib-full"
+        BUNDLE_EXPORT_NAME="wastdlib_full_init"
         INCLUDE_ZSTD=1
         INCLUDE_UNICODEDATA=1
         INCLUDE_SQLITE=1
@@ -564,19 +583,19 @@ if [[ "${MODULE}" == "wasthon" || "${MODULE}" == "wasthon-full" ]]; then
     # guard against libmpdec stack pressure). _decimal is in the
     # kitchen-sink bundle only, so the check is scoped there. It carries
     # a small .wasm cost (~2%) and is not needed by the light bundle.
-    [[ "${BUNDLE_NAME}" == "wasthon-full" ]] && STACK_FLAG="${STACK_FLAG} -sSTACK_OVERFLOW_CHECK=2"
+    [[ "${BUNDLE_NAME}" == "wastdlib-full" ]] && STACK_FLAG="${STACK_FLAG} -sSTACK_OVERFLOW_CHECK=2"
 
     # FS only in the full bundle (it ships _sqlite3, whose file DBs live in the
     # Emscripten FS — the harness clears them there). The light bundle has no
     # _sqlite3, so omit FS to avoid the dead weight.
     BUNDLE_RTM='"HEAPU8","HEAP32","HEAPF32","HEAPF64","HEAP16","UTF8ToString","stringToUTF8","lengthBytesUTF8"'
-    [[ "${BUNDLE_NAME}" == "wasthon-full" ]] && BUNDLE_RTM="${BUNDLE_RTM},\"FS\""
+    [[ "${BUNDLE_NAME}" == "wastdlib-full" ]] && BUNDLE_RTM="${BUNDLE_RTM},\"FS\""
 
     # Force the full Emscripten FS into the full bundle so wasthon-fs.js can back
     # Brython's posix layer with the SAME MEMFS sqlite3's file DBs live in — one
     # shared filesystem, so os.path.exists() sees what the C side wrote.
     FS_FLAG=""
-    [[ "${BUNDLE_NAME}" == "wasthon-full" ]] && FS_FLAG="-sFORCE_FILESYSTEM=1"
+    [[ "${BUNDLE_NAME}" == "wastdlib-full" ]] && FS_FLAG="-sFORCE_FILESYSTEM=1"
 
     emcc -O2 ${STACK_FLAG} ${FS_FLAG} ${EXTRA_LD_FLAGS:-} "${OBJS[@]}" \
         --js-library "${SRC}/wasthon.js" \

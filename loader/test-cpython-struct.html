@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>wasthon — CPython test_struct.py against wasthon _struct</title>
+<title>Wastdlib — CPython test_struct.py against Wastdlib _struct</title>
 <script src="./brython-src.js"></script>
 <script src="./wasthon-loader.js"></script>
 </head>
 <body>
 <p style="font-size:0.85em;margin:0 0 1em 0;"><a href="index.html">← back to index</a></p>
-<h1>wasthon — CPython <code>test_struct.py</code> vs wasthon <code>_struct</code></h1>
+<h1>Wastdlib — CPython <code>test_struct.py</code> vs Wastdlib <code>_struct</code></h1>
 <p style="color:#666;font-size:0.9em;">
   Runs CPython's own <code>Lib/test/test_struct.py</code> against the wasthon
   <code>_struct</code> module (via the stdlib <code>struct.py</code> wrapper).
@@ -28,8 +28,8 @@ const log = (...args) => {
 window.__wasthon_log = log;
 
 try {
-    log('Loading wasthon-full.mjs…');
-    const bundle = await wasthonLoadBundle('../build/wasthon-full.mjs');
+    log('Loading wastdlib-full.mjs…');
+    const bundle = await wasthonLoadBundle('../build/wastdlib-full.mjs');
     log('Installing _struct, array, math…');
     bundle.installModule('_struct');
     bundle.installModule('array');

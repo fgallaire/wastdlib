@@ -1,6 +1,6 @@
 # Third-party components
 
-Wasthon redistributes, links, or otherwise depends on the following
+Wastdlib redistributes, links, or otherwise depends on the following
 third-party components, each governed by its own license. Their copyright
 notices and licenses are preserved.
 
@@ -8,36 +8,18 @@ notices and licenses are preserved.
 
 ### CPython — Python Software Foundation License v2
 
-Wasthon mirrors CPython's public C-API surface in its header files, and
-includes two files copied (near-)verbatim from CPython:
-
-- `src/pycore_blocks_output_buffer.h` — copied from CPython's
-  `Include/internal/pycore_blocks_output_buffer.h`. Used by the compression
-  modules (`_bz2`, `_lzma`, `_zlib`, `_zstd`) to manage dynamic output
-  buffers during streaming.
-- `src/pyexpat.h` — copied from CPython's `Include/pyexpat.h`. Defines the
-  `PyExpat_CAPI` capsule struct exposed by `pyexpat` to other parser
-  modules.
-- `src/pythread.h` — copied from CPython's `Include/pythread.h`. Provides
-  thread-state typedefs and primitives that `_sqlite3` references; the
-  bridge supplies single-threaded WASM stubs for the operations.
-- `src/structmember.h` — copied from CPython's `Include/structmember.h`.
-  Provides the `PyMemberDef` type codes used by `_sqlite3` (and any
-  module exposing C struct members as Python attributes).
-
-`src/wasthon.h` re-declares many CPython public C-API function prototypes,
-macros, and struct layouts. Function signatures and macro values are
-factual (Wasthon is a bridge, not a re-implementation) and chosen to match
-CPython's typeslots, member-type codes, and ABI exactly.
+- `loader/cpython-tests/` — CPython's own test suites and the pure-Python
+  modules they import, served as-is to the test pages.
 
 CPython is (C) 2001–present Python Software Foundation. The full PSF License
 v2 text is available at <https://docs.python.org/3/license.html>.
 
 ## Redistributed in compiled form (linked into the `.wasm` outputs)
 
-At build time, `build.sh` downloads and compiles the following libraries
-to WebAssembly, embedding them in the per-module `.wasm` artifacts shipped
-to Wasthon users:
+At build time, `build.sh` downloads CPython's sources and compiles its C
+standard-library modules (`Modules/*.c`, unmodified — PSF License v2) to
+WebAssembly, together with the following libraries, embedding them in the
+per-module `.wasm` artifacts shipped to Wastdlib users:
 
 - **HACL\*** — Apache License 2.0. Bundled with CPython; provides the
   verified C implementations of MD5, SHA-1, SHA-2, SHA-3, BLAKE2, and HMAC
@@ -69,12 +51,13 @@ to Wasthon users:
 
 - **Emscripten / emsdk** — University of Illinois/NCSA Open Source
   License and MIT. Used to compile C to WebAssembly. Downloaded into
-  `./external/emsdk/` on first build but not part of the wasthon
+  `./external/emsdk/` on first build but not part of the Wastdlib
   distribution itself. <https://emscripten.org/>
 
-## Runtime peer (loaded from CDN, not bundled)
+## Runtime peer (not in this repository)
 
 - **Brython** — BSD 3-Clause License, (C) Pierre Quentel and contributors.
-  The Python-to-JavaScript runtime that wasthon plugs into. Loaded by the
-  loader pages from a pinned `cdn.jsdelivr.net` URL; not redistributed in
-  this repository. <https://brython.info/>
+  The Python-to-JavaScript runtime the modules run in: `build.sh` copies
+  the build vendored by the [wasthon](https://github.com/fgallaire/wasthon)
+  bridge into `loader/brython/`, and the published pages serve it.
+  <https://brython.info/>

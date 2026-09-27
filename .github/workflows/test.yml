@@ -22,6 +22,12 @@ jobs:
         with:
           python-version: '3.12'
 
+      # The bridge (src/, the vendored Brython, the pages' JS helpers) comes
+      # from the wasthon repository; build.sh uses .wasthon/ when present.
+      # Cloned before the caches so the object cache keys on its headers.
+      - name: Clone wasthon (the bridge)
+        run: git clone --depth 1 https://github.com/fgallaire/wasthon.git .wasthon
+
       # Cache external source trees: CPython tarball, sqlite zip, expat, xz,
       # zstd, bzip2 + emsdk. Without this, every CI run re-downloads ~200 MB
       # and re-installs emsdk (~3 min). Key on build.sh because that's where
@@ -35,8 +41,8 @@ jobs:
             external-
 
       # Cache build/*.o object files too — cold compiles take 5-10 min.
-      # Key on src/ + build.sh because any of those changing should force
-      # a rebuild of the touched modules anyway.
+      # Key on the bridge's src/ + build.sh because any of those changing
+      # should force a rebuild of the touched modules anyway.
       - name: Cache build objects
         uses: actions/cache@v4
         with:
@@ -45,7 +51,7 @@ jobs:
             build/libmpdec/
             build/bzip2/
             build/clinic/
-          key: build-objs-${{ hashFiles('src/**', 'build.sh') }}
+          key: build-objs-${{ hashFiles('.wasthon/src/**', 'build.sh') }}
           restore-keys: |
             build-objs-
 
@@ -60,12 +66,12 @@ jobs:
       - name: Build all modules
         run: ./build.sh all
 
-      # Build both bundles for the test-wasthon{,-full}.html pages.
-      - name: Build wasthon (light) bundle
-        run: ./build.sh wasthon
+      # Build both bundles for the test-wastdlib{,-full}.html pages.
+      - name: Build wastdlib (light) bundle
+        run: ./build.sh wastdlib
 
-      - name: Build wasthon-full bundle
-        run: ./build.sh wasthon-full
+      - name: Build wastdlib-full bundle
+        run: ./build.sh wastdlib-full
 
       - name: Run headless tests
         run: python3 test.py
@@ -82,7 +88,7 @@ jobs:
           mkdir -p _site
           cp -r loader _site/
           cp -r build  _site/
-          printf '<!doctype html><meta charset="utf-8"><title>wasthon</title><meta http-equiv="refresh" content="0; url=loader/"><p>Redirecting to <a href="loader/">loader/</a>…</p>\n' > _site/index.html
+          printf '<!doctype html><meta charset="utf-8"><title>Wastdlib</title><meta http-equiv="refresh" content="0; url=loader/"><p>Redirecting to <a href="loader/">loader/</a>…</p>\n' > _site/index.html
 
       - name: Upload Pages artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

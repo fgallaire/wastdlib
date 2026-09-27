@@ -9,9 +9,9 @@ or "timed out" for failure), prints a recap, exits 0 on success / 1 on
 failure / 2 on harness error.
 
 Designed for both local dev (`python3 test.py`) and CI
-(`.github/workflows/test.yml`). Assumes the wasthon artifacts under
-`build/` already exist — run `./build.sh all && ./build.sh wasthon &&
-./build.sh wasthon-full` first.
+(`.github/workflows/test.yml`). Assumes the Wastdlib artifacts under
+`build/` already exist — run `./build.sh all && ./build.sh wastdlib &&
+./build.sh wastdlib-full` first.
 """
 
 import subprocess

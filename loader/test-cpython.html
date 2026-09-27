@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>wasthon — CPython test runner</title>
+<title>Wastdlib — CPython test runner</title>
 <script src="./brython-src.js"></script>
 <script src="./wasthon-loader.js"></script>
 <script src="./wasthon-io-write.js"></script>
@@ -12,7 +12,7 @@
 </head>
 <body>
 <p style="font-size:0.85em;margin:0 0 1em 0;"><a href="index.html">← back to index</a></p>
-<h1>wasthon — CPython test runner</h1>
+<h1>Wastdlib — CPython test runner</h1>
 <p style="color:#666;font-size:0.9em;">
   Runs a CPython <code>Lib/test/test_&lt;mod&gt;.py</code> against the wasthon
   modules. Pass <code>?test=test_struct</code> in the URL. The
@@ -81,7 +81,7 @@ const installList = params.get('install')
 // — the way to test a standalone module's own build config (e.g. its FS export)
 // against its CPython suite. Only works for single-module suites (the standalone
 // .mjs has just that module; installModule() of anything else logs a failure).
-const bundleName = params.get('bundle') || 'wasthon-full';
+const bundleName = params.get('bundle') || 'wastdlib-full';
 
 try {
     log('Loading ' + bundleName + '.mjs…');
